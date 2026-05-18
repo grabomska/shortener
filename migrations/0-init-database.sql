@@ -1,0 +1,6 @@
+
+CREATE TABLE short_url
+(
+    short VARCHAR(255) PRIMARY KEY,
+    url TEXT NOT NULL UNIQUE
+)
