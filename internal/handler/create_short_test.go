@@ -3,6 +3,7 @@ package handler
 import (
 	"crypto/tls"
 	"errors"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -21,6 +22,8 @@ func (r *errReader) Read(_ []byte) (int, error) {
 }
 
 func TestHandlerGetUrlSuccessHTTP(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -30,18 +33,24 @@ func TestHandlerGetUrlSuccessHTTP(t *testing.T) {
 		Return(&model.ShortUrl{Short: "ABC123", Url: "https://example.com"}, nil)
 
 	h := NewHandler(mockService)
+
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("https://example.com"))
 	req.Host = "short.local"
-	rr := httptest.NewRecorder()
+	w := httptest.NewRecorder()
 
-	h.CreateShort(rr, req)
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
 
-	assert.Equal(t, http.StatusCreated, rr.Code)
-	assert.Equal(t, "text/plain", rr.Header().Get("Content-Type"))
-	assert.Equal(t, "http://short.local/ABC123", rr.Body.String())
+	h.CreateShort(c)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, "text/plain", w.Header().Get("Content-Type"))
+	assert.Equal(t, "http://short.local/ABC123", w.Body.String())
 }
 
 func TestHandlerCreateShortSuccessHTTPS(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -51,34 +60,46 @@ func TestHandlerCreateShortSuccessHTTPS(t *testing.T) {
 		Return(&model.ShortUrl{Short: "ABC123"}, nil)
 
 	h := NewHandler(mockService)
+
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("https://example.com"))
 	req.Host = "short.local"
 	req.TLS = &tls.ConnectionState{}
-	rr := httptest.NewRecorder()
+	w := httptest.NewRecorder()
 
-	h.CreateShort(rr, req)
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
 
-	assert.Equal(t, http.StatusCreated, rr.Code)
-	assert.Equal(t, "text/plain", rr.Header().Get("Content-Type"))
-	assert.Equal(t, "https://short.local/ABC123", rr.Body.String())
+	h.CreateShort(c)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, "text/plain", w.Header().Get("Content-Type"))
+	assert.Equal(t, "https://short.local/ABC123", w.Body.String())
 }
 
 func TestHandlerCreateShortReadBodyError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockService := mocks.NewMockShortenerServiceInterface(ctrl)
 	h := NewHandler(mockService)
+
 	req := httptest.NewRequest(http.MethodPost, "/", &errReader{})
-	rr := httptest.NewRecorder()
+	w := httptest.NewRecorder()
 
-	h.CreateShort(rr, req)
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
 
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	assert.Equal(t, "read body error", strings.TrimSpace(rr.Body.String()))
+	h.CreateShort(c)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, "read body error", strings.TrimSpace(w.Body.String()))
 }
 
 func TestHandlerCreateShortServiceError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -88,11 +109,15 @@ func TestHandlerCreateShortServiceError(t *testing.T) {
 		Return(nil, errors.New("service error"))
 
 	h := NewHandler(mockService)
+
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("https://example.com"))
-	rr := httptest.NewRecorder()
+	w := httptest.NewRecorder()
 
-	h.CreateShort(rr, req)
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
 
-	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	assert.Equal(t, "service error", strings.TrimSpace(rr.Body.String()))
+	h.CreateShort(c)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "service error", strings.TrimSpace(w.Body.String()))
 }

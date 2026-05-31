@@ -1,34 +1,30 @@
 package handler
 
 import (
-	"io"
+	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
-func (h *Handler) CreateShort(w http.ResponseWriter, r *http.Request) {
-	buf := make([]byte, 1024)
-	body, err := r.Body.Read(buf)
-	if err != nil && err != io.EOF {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+func (h *Handler) CreateShort(c *gin.Context) {
+	body, err := c.GetRawData()
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
-	defer r.Body.Close()
 
-	url := string(buf[:body])
+	url := string(body)
 	shorted, err := h.service.CreateShortUrl(url)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 
+	c.Header("content-type", "text/plain")
+
 	scheme := "http"
-	if r.TLS != nil {
+	if c.Request.TLS != nil {
 		scheme = "https"
 	}
 
-	resp := []byte(scheme + "://" + r.Host + "/" + shorted.Short)
-
-	w.Header().Set("content-type", "text/plain")
-	w.WriteHeader(http.StatusCreated)
-	w.Write(resp)
+	c.String(http.StatusCreated, scheme+"://"+c.Request.Host+"/"+shorted.Short)
 }

@@ -2,12 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"github.com/gin-gonic/gin"
 	"github.com/grabomska/shortener/internal/handler"
 	"github.com/grabomska/shortener/internal/repository"
 	"github.com/grabomska/shortener/internal/service"
 	"log"
-	"net/http"
-
 	_ "modernc.org/sqlite"
 )
 
@@ -22,12 +21,10 @@ func main() {
 	urlShortener := service.NewShortenerService(sqLiteRepository)
 	httpHandler := handler.NewHandler(urlShortener)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /", httpHandler.CreateShort)
-	mux.HandleFunc("GET /{id}", httpHandler.GetUrl)
+	r := gin.Default()
 
-	err = http.ListenAndServe(`:8080`, mux)
-	if err != nil {
-		panic(err)
-	}
+	r.POST("/", httpHandler.CreateShort)
+	r.GET("/:id", httpHandler.GetUrl)
+
+	r.Run(":8080")
 }

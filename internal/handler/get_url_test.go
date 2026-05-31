@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +15,8 @@ import (
 )
 
 func TestHandlerGetUrlSuccess(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -23,18 +26,24 @@ func TestHandlerGetUrlSuccess(t *testing.T) {
 		Return(&model.ShortUrl{Short: "ABC123", Url: "https://example.com"}, nil)
 
 	h := NewHandler(mockService)
+
 	req := httptest.NewRequest(http.MethodGet, "/ABC123", nil)
 	req.SetPathValue("id", "ABC123")
-	req.Host = "short.local"
-	rr := httptest.NewRecorder()
+	w := httptest.NewRecorder()
 
-	h.GetUrl(rr, req)
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	c.Params = gin.Params{gin.Param{Key: "id", Value: "ABC123"}}
 
-	assert.Equal(t, http.StatusTemporaryRedirect, rr.Code)
-	assert.Equal(t, "https://example.com", rr.Header().Get("Location"))
+	h.GetUrl(c)
+
+	assert.Equal(t, http.StatusTemporaryRedirect, w.Code)
+	assert.Equal(t, "https://example.com", w.Header().Get("Location"))
 }
 
 func TestHandlerGetUrlNotFound(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -44,13 +53,16 @@ func TestHandlerGetUrlNotFound(t *testing.T) {
 		Return(nil, errors.New("not found"))
 
 	h := NewHandler(mockService)
+
 	req := httptest.NewRequest(http.MethodGet, "/ABC123", nil)
-	req.SetPathValue("id", "ABC123")
-	req.Host = "short.local"
-	rr := httptest.NewRecorder()
+	w := httptest.NewRecorder()
 
-	h.GetUrl(rr, req)
+	c, _ := gin.CreateTestContext(w)
+	c.Params = gin.Params{gin.Param{Key: "id", Value: "ABC123"}}
+	c.Request = req
 
-	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	assert.Equal(t, "not found", strings.TrimSpace(rr.Body.String()))
+	h.GetUrl(c)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "not found", strings.TrimSpace(w.Body.String()))
 }
