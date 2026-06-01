@@ -1,11 +1,18 @@
 package handler
 
-import "github.com/grabomska/shortener/internal/service"
+import (
+	"github.com/grabomska/shortener/internal/config"
+	"github.com/grabomska/shortener/internal/service"
+)
 
 type Handler struct {
+	cfg     *config.Config
 	service service.ShortenerServiceInterface
 }
 
-func NewHandler(service service.ShortenerServiceInterface) *Handler {
-	return &Handler{service: service}
+func NewHandler(cfg *config.Config, service service.ShortenerServiceInterface) *Handler {
+	return &Handler{
+		cfg:     cfg,
+		service: service,
+	}
 }

@@ -1,8 +1,9 @@
 package handler
 
 import (
-	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/grabomska/shortener/internal/config"
+	"github.com/grabomska/shortener/internal/service"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -25,7 +26,8 @@ func TestHandlerGetUrlSuccess(t *testing.T) {
 		GetFullUrlByShort("ABC123").
 		Return(&model.ShortUrl{Short: "ABC123", Url: "https://example.com"}, nil)
 
-	h := NewHandler(mockService)
+	cfg := &config.Config{}
+	h := NewHandler(cfg, mockService)
 
 	req := httptest.NewRequest(http.MethodGet, "/ABC123", nil)
 	req.SetPathValue("id", "ABC123")
@@ -50,9 +52,10 @@ func TestHandlerGetUrlNotFound(t *testing.T) {
 	mockService := mocks.NewMockShortenerServiceInterface(ctrl)
 	mockService.EXPECT().
 		GetFullUrlByShort("ABC123").
-		Return(nil, errors.New("not found"))
+		Return(nil, service.ErrShortURLNotFound)
 
-	h := NewHandler(mockService)
+	cfg := &config.Config{}
+	h := NewHandler(cfg, mockService)
 
 	req := httptest.NewRequest(http.MethodGet, "/ABC123", nil)
 	w := httptest.NewRecorder()
@@ -63,6 +66,6 @@ func TestHandlerGetUrlNotFound(t *testing.T) {
 
 	h.GetUrl(c)
 
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, "not found", strings.TrimSpace(w.Body.String()))
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, service.ErrShortURLNotFound.Error(), strings.TrimSpace(w.Body.String()))
 }

@@ -10,6 +10,11 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+var (
+	errGetByShort = errors.New("get by short error")
+	errCreate     = errors.New("create error")
+)
+
 func TestShortenerServiceCreateShortUrl(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -41,7 +46,7 @@ func TestShortenerServiceCreateShortUrl(t *testing.T) {
 			setup: func(repo *mocks.MockRepository) {
 				repo.EXPECT().
 					GetByShort(gomock.Any()).
-					Return(nil, errors.New("get by short error"))
+					Return(nil, errGetByShort)
 			},
 			url:     "https://example.com",
 			wantErr: true,
@@ -55,7 +60,7 @@ func TestShortenerServiceCreateShortUrl(t *testing.T) {
 
 				repo.EXPECT().
 					Create(gomock.Any()).
-					Return(errors.New("create error"))
+					Return(errCreate)
 			},
 			url:     "https://example.com",
 			wantErr: true,

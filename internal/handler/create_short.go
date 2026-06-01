@@ -20,11 +20,5 @@ func (h *Handler) CreateShort(c *gin.Context) {
 	}
 
 	c.Header("content-type", "text/plain")
-
-	scheme := "http"
-	if c.Request.TLS != nil {
-		scheme = "https"
-	}
-
-	c.String(http.StatusCreated, scheme+"://"+c.Request.Host+"/"+shorted.Short)
+	c.String(http.StatusCreated, h.cfg.ResultAddress+"/"+shorted.Short)
 }

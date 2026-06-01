@@ -2,11 +2,11 @@ package service
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"github.com/grabomska/shortener/internal/model"
 	"github.com/grabomska/shortener/internal/repository"
 	"math/big"
-	"time"
 )
 
 const (
@@ -14,6 +14,8 @@ const (
 	defaultLength = 6
 	maxAttempts   = 3
 )
+
+var ErrShortURLNotFound = errors.New("short url not found")
 
 type ShortenerServiceInterface interface {
 	CreateShortUrl(url string) (*model.ShortUrl, error)
@@ -41,7 +43,7 @@ func (s *ShortenerService) CreateShortUrl(url string) (*model.ShortUrl, error) {
 
 	err = s.repo.Create(shortUrl)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create user: %w", err)
 	}
 
 	return shortUrl, nil
@@ -50,11 +52,11 @@ func (s *ShortenerService) CreateShortUrl(url string) (*model.ShortUrl, error) {
 func (s *ShortenerService) GetFullUrlByShort(short string) (*model.ShortUrl, error) {
 	shortURL, err := s.repo.GetByShort(short)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get full url: %w", err)
 	}
 
 	if shortURL == nil {
-		return nil, fmt.Errorf(`short url not found`)
+		return nil, ErrShortURLNotFound
 	}
 
 	return shortURL, nil
@@ -77,11 +79,6 @@ func (s *ShortenerService) generateUniqueShortURL(length int) (string, error) {
 
 		if isUnique {
 			return short, nil
-		}
-
-		// Если не уникален, ждем перед следующей попыткой
-		if attempt < maxAttempts {
-			time.Sleep(time.Duration(attempt*10) * time.Millisecond)
 		}
 	}
 
