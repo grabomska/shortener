@@ -15,11 +15,16 @@ const (
 	maxAttempts   = 3
 )
 
+type ShortenerServiceInterface interface {
+	CreateShortUrl(url string) (*model.ShortUrl, error)
+	GetFullUrlByShort(short string) (*model.ShortUrl, error)
+}
+
 type ShortenerService struct {
 	repo repository.Repository
 }
 
-func NewShortenerService(repo repository.Repository) *ShortenerService {
+func NewShortenerService(repo repository.Repository) ShortenerServiceInterface {
 	return &ShortenerService{repo}
 }
 
@@ -45,11 +50,11 @@ func (s *ShortenerService) CreateShortUrl(url string) (*model.ShortUrl, error) {
 func (s *ShortenerService) GetFullUrlByShort(short string) (*model.ShortUrl, error) {
 	shortURL, err := s.repo.GetByShort(short)
 	if err != nil {
-		return &model.ShortUrl{}, err
+		return nil, err
 	}
 
 	if shortURL == nil {
-		return &model.ShortUrl{}, fmt.Errorf(`short url not found`)
+		return nil, fmt.Errorf(`short url not found`)
 	}
 
 	return shortURL, nil

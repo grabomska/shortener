@@ -1,25 +1,11 @@
 package handler
 
 import (
-	"github.com/grabomska/shortener/internal/service"
 	"io"
 	"net/http"
 )
 
-type CreateShortURLHandler struct {
-	service *service.ShortenerService
-}
-
-func NewCreateShortURLHandler(service *service.ShortenerService) *CreateShortURLHandler {
-	return &CreateShortURLHandler{service: service}
-}
-
-func (h *CreateShortURLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Only POST method allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
+func (h *Handler) CreateShort(w http.ResponseWriter, r *http.Request) {
 	buf := make([]byte, 1024)
 	body, err := r.Body.Read(buf)
 	if err != nil && err != io.EOF {

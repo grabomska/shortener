@@ -20,13 +20,11 @@ func main() {
 
 	sqLiteRepository := repository.NewSQLiteRepository(db)
 	urlShortener := service.NewShortenerService(sqLiteRepository)
-
-	createHandler := handler.NewCreateShortURLHandler(urlShortener)
-	getHandler := handler.NewGetURLHandler(urlShortener)
+	httpHandler := handler.NewHandler(urlShortener)
 
 	mux := http.NewServeMux()
-	mux.Handle("POST /", createHandler)
-	mux.Handle("GET /{id}", getHandler)
+	mux.HandleFunc("POST /", httpHandler.CreateShort)
+	mux.HandleFunc("GET /{id}", httpHandler.GetUrl)
 
 	err = http.ListenAndServe(`:8080`, mux)
 	if err != nil {
