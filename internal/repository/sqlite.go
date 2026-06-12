@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+
 	"github.com/grabomska/shortener/internal/model"
 )
 
@@ -43,7 +44,7 @@ func (r *SQLiteRepository) GetByShort(short string) (*model.ShortUrl, error) {
 func (r *SQLiteRepository) GetByUrl(url string) (*model.ShortUrl, error) {
 	var shortUrl model.ShortUrl
 
-	query := `SELECT url, short FROM short_url WHERE full_url = ?`
+	query := `SELECT url, short FROM short_url WHERE url = ?`
 	err := r.db.QueryRow(query, url).Scan(&shortUrl.Url, &shortUrl.Short)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

@@ -2,17 +2,18 @@ package main
 
 import (
 	"database/sql"
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"github.com/grabomska/shortener/internal/config"
 	"github.com/grabomska/shortener/internal/handler"
 	"github.com/grabomska/shortener/internal/repository"
 	"github.com/grabomska/shortener/internal/service"
-	"log"
 	_ "modernc.org/sqlite"
 )
 
 func main() {
-	cfg := config.LoadFromCmd()
+	cfg := config.Load()
 
 	db, err := sql.Open("sqlite", "./shortener.db")
 	if err != nil {
@@ -29,5 +30,5 @@ func main() {
 	r.POST("/", httpHandler.CreateShort)
 	r.GET("/:id", httpHandler.GetUrl)
 
-	r.Run(cfg.Address)
+	r.Run(cfg.ServerAddress)
 }

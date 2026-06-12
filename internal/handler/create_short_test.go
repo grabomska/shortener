@@ -2,13 +2,14 @@ package handler
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
-	"github.com/grabomska/shortener/internal/config"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/gin-gonic/gin"
+	"github.com/grabomska/shortener/internal/config"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/grabomska/shortener/internal/model"
 	"github.com/grabomska/shortener/internal/service/mocks"
@@ -50,7 +51,7 @@ func TestHandlerGetUrlSuccessHTTP(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "text/plain", w.Header().Get("Content-Type"))
-	assert.Equal(t, cfg.ResultAddress+"/ABC123", w.Body.String())
+	assert.Equal(t, cfg.BaseURL+"/ABC123", w.Body.String())
 }
 
 func TestHandlerCreateShortReadBodyError(t *testing.T) {
