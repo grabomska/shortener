@@ -1,16 +1,17 @@
 package handler
 
 import (
+	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
-func (h *Handler) GetUrl(w http.ResponseWriter, r *http.Request) {
-	short := r.PathValue("id")
+func (h *Handler) GetUrl(c *gin.Context) {
+	short := c.Param("id")
 	shortUrl, err := h.service.GetFullUrlByShort(short)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	http.Redirect(w, r, shortUrl.Url, http.StatusTemporaryRedirect)
+	c.Redirect(http.StatusTemporaryRedirect, shortUrl.Url)
 }
