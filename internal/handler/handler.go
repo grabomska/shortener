@@ -10,7 +10,10 @@ type Handler struct {
 	service service.ShortenerServiceInterface
 }
 
-func NewHandler(cfg *config.Config, service service.ShortenerServiceInterface) *Handler {
+func NewHandler(
+	cfg *config.Config,
+	service service.ShortenerServiceInterface,
+) *Handler {
 	return &Handler{
 		cfg:     cfg,
 		service: service,
