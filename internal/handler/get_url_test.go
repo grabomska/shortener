@@ -15,57 +15,59 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestHandlerGetUrlSuccess(t *testing.T) {
+func TestHandlerGetURL(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	tests := []struct {
+		name         string
+		setup        func(service *mocks.MockShortenerServiceInterface)
+		wantStatus   int
+		wantLocation string
+		wantBody     string
+	}{
+		{
+			name: "success",
+			setup: func(service *mocks.MockShortenerServiceInterface) {
+				service.EXPECT().
+					GetFullURLByShort("ABC123").
+					Return(&model.ShortURL{Short: "ABC123", URL: "https://example.com"}, nil)
+			},
+			wantStatus:   http.StatusTemporaryRedirect,
+			wantLocation: "https://example.com",
+		},
+		{
+			name: "not found",
+			setup: func(mockService *mocks.MockShortenerServiceInterface) {
+				mockService.EXPECT().
+					GetFullURLByShort("ABC123").
+					Return(nil, service.ErrShortURLNotFound)
+			},
+			wantStatus: http.StatusNotFound,
+			wantBody:   service.ErrShortURLNotFound.Error(),
+		},
+	}
 
-	mockService := mocks.NewMockShortenerServiceInterface(ctrl)
-	mockService.EXPECT().
-		GetFullUrlByShort("ABC123").
-		Return(&model.ShortUrl{Short: "ABC123", Url: "https://example.com"}, nil)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mockService := mocks.NewMockShortenerServiceInterface(ctrl)
+			test.setup(mockService)
 
-	cfg := &config.Config{}
-	h := NewHandler(cfg, mockService)
+			h := NewHandler(&config.Config{}, mockService)
+			req := httptest.NewRequest(http.MethodGet, "/ABC123", nil)
+			w := httptest.NewRecorder()
 
-	req := httptest.NewRequest(http.MethodGet, "/ABC123", nil)
-	req.SetPathValue("id", "ABC123")
-	w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = req
+			c.Params = gin.Params{{Key: "id", Value: "ABC123"}}
 
-	c, _ := gin.CreateTestContext(w)
-	c.Request = req
-	c.Params = gin.Params{gin.Param{Key: "id", Value: "ABC123"}}
+			h.GetURL(c)
 
-	h.GetUrl(c)
-
-	assert.Equal(t, http.StatusTemporaryRedirect, w.Code)
-	assert.Equal(t, "https://example.com", w.Header().Get("Location"))
-}
-
-func TestHandlerGetUrlNotFound(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockService := mocks.NewMockShortenerServiceInterface(ctrl)
-	mockService.EXPECT().
-		GetFullUrlByShort("ABC123").
-		Return(nil, service.ErrShortURLNotFound)
-
-	cfg := &config.Config{}
-	h := NewHandler(cfg, mockService)
-
-	req := httptest.NewRequest(http.MethodGet, "/ABC123", nil)
-	w := httptest.NewRecorder()
-
-	c, _ := gin.CreateTestContext(w)
-	c.Params = gin.Params{gin.Param{Key: "id", Value: "ABC123"}}
-	c.Request = req
-
-	h.GetUrl(c)
-
-	assert.Equal(t, http.StatusNotFound, w.Code)
-	assert.Equal(t, service.ErrShortURLNotFound.Error(), strings.TrimSpace(w.Body.String()))
+			assert.Equal(t, test.wantStatus, w.Code)
+			assert.Equal(t, test.wantLocation, w.Header().Get("Location"))
+			if test.wantBody != "" {
+				assert.Equal(t, test.wantBody, strings.TrimSpace(w.Body.String()))
+			}
+		})
+	}
 }

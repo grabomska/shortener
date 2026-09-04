@@ -18,8 +18,8 @@ const (
 var ErrShortURLNotFound = errors.New("short url not found")
 
 type ShortenerServiceInterface interface {
-	CreateShortUrl(url string) (*model.ShortUrl, error)
-	GetFullUrlByShort(short string) (*model.ShortUrl, error)
+	CreateShortURL(url string) (*model.ShortURL, error)
+	GetFullURLByShort(short string) (*model.ShortURL, error)
 }
 
 type ShortenerService struct {
@@ -30,26 +30,26 @@ func NewShortenerService(repo repository.Repository) ShortenerServiceInterface {
 	return &ShortenerService{repo}
 }
 
-func (s *ShortenerService) CreateShortUrl(url string) (*model.ShortUrl, error) {
+func (s *ShortenerService) CreateShortURL(url string) (*model.ShortURL, error) {
 	shorted, err := s.generateUniqueShortURL(defaultLength)
 	if err != nil {
 		return nil, err
 	}
 
-	shortUrl := &model.ShortUrl{
-		Url:   url,
+	shortURL := &model.ShortURL{
+		URL:   url,
 		Short: shorted,
 	}
 
-	err = s.repo.Create(shortUrl)
+	err = s.repo.Create(shortURL)
 	if err != nil {
 		return nil, fmt.Errorf("create user: %w", err)
 	}
 
-	return shortUrl, nil
+	return shortURL, nil
 }
 
-func (s *ShortenerService) GetFullUrlByShort(short string) (*model.ShortUrl, error) {
+func (s *ShortenerService) GetFullURLByShort(short string) (*model.ShortURL, error) {
 	shortURL, err := s.repo.GetByShort(short)
 	if err != nil {
 		return nil, fmt.Errorf("get full url: %w", err)

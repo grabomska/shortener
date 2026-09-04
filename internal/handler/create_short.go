@@ -1,8 +1,9 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func (h *Handler) CreateShort(c *gin.Context) {
@@ -13,12 +14,12 @@ func (h *Handler) CreateShort(c *gin.Context) {
 	}
 
 	url := string(body)
-	shorted, err := h.service.CreateShortUrl(url)
+	shorted, err := h.service.CreateShortURL(url)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	c.Header("content-type", "text/plain")
-	c.String(http.StatusCreated, h.cfg.ResultAddress+"/"+shorted.Short)
+	c.String(http.StatusCreated, h.cfg.BaseURL+"/"+shorted.Short)
 }
