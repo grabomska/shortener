@@ -15,24 +15,24 @@ var (
 	errCreate     = errors.New("create error")
 )
 
-func TestShortenerServiceCreateShortUrl(t *testing.T) {
+func TestShortenerServiceCreateShortURL(t *testing.T) {
 	tests := []struct {
 		name    string
-		setup   func(repo *mocks.MockRepository)
+		setup   func(t *testing.T, repo *mocks.MockRepository)
 		url     string
 		wantErr bool
 	}{
 		{
 			name: "success",
-			setup: func(repo *mocks.MockRepository) {
+			setup: func(t *testing.T, repo *mocks.MockRepository) {
 				repo.EXPECT().
 					GetByShort(gomock.Any()).
 					Return(nil, nil)
 
 				repo.EXPECT().
 					Create(gomock.Any()).
-					DoAndReturn(func(shortURL *model.ShortUrl) error {
-						assert.Equal(t, "https://example.com", shortURL.Url)
+					DoAndReturn(func(shortURL *model.ShortURL) error {
+						assert.Equal(t, "https://example.com", shortURL.URL)
 						assert.NotEqual(t, "", shortURL.Short)
 						assert.Equal(t, defaultLength, len(shortURL.Short))
 
@@ -43,7 +43,7 @@ func TestShortenerServiceCreateShortUrl(t *testing.T) {
 		},
 		{
 			name: "repository get by short error",
-			setup: func(repo *mocks.MockRepository) {
+			setup: func(_ *testing.T, repo *mocks.MockRepository) {
 				repo.EXPECT().
 					GetByShort(gomock.Any()).
 					Return(nil, errGetByShort)
@@ -53,7 +53,7 @@ func TestShortenerServiceCreateShortUrl(t *testing.T) {
 		},
 		{
 			name: "repository create error",
-			setup: func(repo *mocks.MockRepository) {
+			setup: func(_ *testing.T, repo *mocks.MockRepository) {
 				repo.EXPECT().
 					GetByShort(gomock.Any()).
 					Return(nil, nil)
@@ -67,25 +67,25 @@ func TestShortenerServiceCreateShortUrl(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
 			repo := mocks.NewMockRepository(ctrl)
-			tt.setup(repo)
+			test.setup(t, repo)
 
 			s := NewShortenerService(repo)
 
-			got, err := s.CreateShortUrl(tt.url)
-			if tt.wantErr {
+			got, err := s.CreateShortURL(test.url)
+			if test.wantErr {
 				assert.Error(t, err)
 				return
 			}
 
 			assert.NoError(t, err)
 			assert.NotNil(t, got)
-			assert.Equal(t, tt.url, got.Url)
+			assert.Equal(t, test.url, got.URL)
 			assert.NotEqual(t, "", got.Short)
 			assert.Equal(t, defaultLength, len(got.Short))
 		})

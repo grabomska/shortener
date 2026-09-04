@@ -7,9 +7,9 @@ import (
 	"net/http"
 )
 
-func (h *Handler) GetUrl(c *gin.Context) {
+func (h *Handler) GetURL(c *gin.Context) {
 	short := c.Param("id")
-	shortUrl, err := h.service.GetFullUrlByShort(short)
+	shortURL, err := h.service.GetFullURLByShort(short)
 	if err != nil {
 		if errors.Is(err, service.ErrShortURLNotFound) {
 			c.String(http.StatusNotFound, err.Error())
@@ -20,5 +20,5 @@ func (h *Handler) GetUrl(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusTemporaryRedirect, shortUrl.Url)
+	c.Redirect(http.StatusTemporaryRedirect, shortURL.URL)
 }

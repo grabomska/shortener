@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -27,77 +28,76 @@ func (r *errReader) Read(_ []byte) (int, error) {
 	return 0, errReadBody
 }
 
-func TestHandlerGetUrlSuccessHTTP(t *testing.T) {
+func TestHandlerCreateShort(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	tests := []struct {
+		name            string
+		body            func() io.Reader
+		setup           func(service *mocks.MockShortenerServiceInterface)
+		wantStatus      int
+		wantContentType string
+		wantBody        string
+	}{
+		{
+			name: "success",
+			body: func() io.Reader {
+				return strings.NewReader("https://example.com")
+			},
+			setup: func(service *mocks.MockShortenerServiceInterface) {
+				service.EXPECT().
+					CreateShortURL("https://example.com").
+					Return(&model.ShortURL{Short: "ABC123", URL: "https://example.com"}, nil)
+			},
+			wantStatus:      http.StatusCreated,
+			wantContentType: "text/plain",
+			wantBody:        "/ABC123",
+		},
+		{
+			name: "read body error",
+			body: func() io.Reader {
+				return &errReader{}
+			},
+			setup:      func(_ *mocks.MockShortenerServiceInterface) {},
+			wantStatus: http.StatusBadRequest,
+			wantBody:   errReadBody.Error(),
+		},
+		{
+			name: "service error",
+			body: func() io.Reader {
+				return strings.NewReader("https://example.com")
+			},
+			setup: func(service *mocks.MockShortenerServiceInterface) {
+				service.EXPECT().
+					CreateShortURL("https://example.com").
+					Return(nil, errService)
+			},
+			wantStatus: http.StatusInternalServerError,
+			wantBody:   errService.Error(),
+		},
+	}
 
-	mockService := mocks.NewMockShortenerServiceInterface(ctrl)
-	mockService.EXPECT().
-		CreateShortUrl("https://example.com").
-		Return(&model.ShortUrl{Short: "ABC123", Url: "https://example.com"}, nil)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mockService := mocks.NewMockShortenerServiceInterface(ctrl)
+			test.setup(mockService)
 
-	cfg := &config.Config{}
-	h := NewHandler(cfg, mockService)
+			cfg := &config.Config{}
+			h := NewHandler(cfg, mockService)
+			req := httptest.NewRequest(http.MethodPost, "/", test.body())
+			w := httptest.NewRecorder()
 
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("https://example.com"))
-	w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = req
 
-	c, _ := gin.CreateTestContext(w)
-	c.Request = req
+			h.CreateShort(c)
 
-	h.CreateShort(c)
-
-	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "text/plain", w.Header().Get("Content-Type"))
-	assert.Equal(t, cfg.BaseURL+"/ABC123", w.Body.String())
-}
-
-func TestHandlerCreateShortReadBodyError(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockService := mocks.NewMockShortenerServiceInterface(ctrl)
-	cfg := &config.Config{}
-	h := NewHandler(cfg, mockService)
-
-	req := httptest.NewRequest(http.MethodPost, "/", &errReader{})
-	w := httptest.NewRecorder()
-
-	c, _ := gin.CreateTestContext(w)
-	c.Request = req
-
-	h.CreateShort(c)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, "read body error", strings.TrimSpace(w.Body.String()))
-}
-
-func TestHandlerCreateShortServiceError(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockService := mocks.NewMockShortenerServiceInterface(ctrl)
-	mockService.EXPECT().
-		CreateShortUrl("https://example.com").
-		Return(nil, errService)
-
-	cfg := &config.Config{}
-	h := NewHandler(cfg, mockService)
-
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("https://example.com"))
-	w := httptest.NewRecorder()
-
-	c, _ := gin.CreateTestContext(w)
-	c.Request = req
-
-	h.CreateShort(c)
-
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, "service error", strings.TrimSpace(w.Body.String()))
+			assert.Equal(t, test.wantStatus, w.Code)
+			if test.wantContentType != "" {
+				assert.Equal(t, test.wantContentType, w.Header().Get("Content-Type"))
+			}
+			assert.Equal(t, test.wantBody, strings.TrimSpace(w.Body.String()))
+		})
+	}
 }

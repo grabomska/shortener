@@ -14,7 +14,7 @@ func (h *Handler) CreateShort(c *gin.Context) {
 	}
 
 	url := string(body)
-	shorted, err := h.service.CreateShortUrl(url)
+	shorted, err := h.service.CreateShortURL(url)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return

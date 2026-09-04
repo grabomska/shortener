@@ -55,7 +55,8 @@ func main() {
 
 	// routes
 	r.POST("/", httpHandler.CreateShort)
-	r.GET("/:id", httpHandler.GetUrl)
+	r.GET("/:id", httpHandler.GetURL)
+	r.POST("api/shorten", httpHandler.CreateShorten)
 
 	r.Run(cfg.ServerAddress)
 }

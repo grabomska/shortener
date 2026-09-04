@@ -15,9 +15,9 @@ func NewSQLiteRepository(db *sql.DB) Repository {
 	return &SQLiteRepository{db: db}
 }
 
-func (r *SQLiteRepository) Create(url *model.ShortUrl) error {
+func (r *SQLiteRepository) Create(url *model.ShortURL) error {
 	insert := `INSERT INTO short_url (url, short) VALUES (?, ?)`
-	_, err := r.db.Exec(insert, url.Url, url.Short)
+	_, err := r.db.Exec(insert, url.URL, url.Short)
 	if err != nil {
 		return err
 	}
@@ -25,11 +25,11 @@ func (r *SQLiteRepository) Create(url *model.ShortUrl) error {
 	return nil
 }
 
-func (r *SQLiteRepository) GetByShort(short string) (*model.ShortUrl, error) {
-	var shortUrl model.ShortUrl
+func (r *SQLiteRepository) GetByShort(short string) (*model.ShortURL, error) {
+	var shortURL model.ShortURL
 
 	query := `SELECT url, short FROM short_url WHERE short = ?`
-	err := r.db.QueryRow(query, short).Scan(&shortUrl.Url, &shortUrl.Short)
+	err := r.db.QueryRow(query, short).Scan(&shortURL.URL, &shortURL.Short)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -38,14 +38,14 @@ func (r *SQLiteRepository) GetByShort(short string) (*model.ShortUrl, error) {
 		return nil, err
 	}
 
-	return &shortUrl, nil
+	return &shortURL, nil
 }
 
-func (r *SQLiteRepository) GetByUrl(url string) (*model.ShortUrl, error) {
-	var shortUrl model.ShortUrl
+func (r *SQLiteRepository) GetByURL(url string) (*model.ShortURL, error) {
+	var shortURL model.ShortURL
 
 	query := `SELECT url, short FROM short_url WHERE url = ?`
-	err := r.db.QueryRow(query, url).Scan(&shortUrl.Url, &shortUrl.Short)
+	err := r.db.QueryRow(query, url).Scan(&shortURL.URL, &shortURL.Short)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -54,5 +54,5 @@ func (r *SQLiteRepository) GetByUrl(url string) (*model.ShortUrl, error) {
 		return nil, err
 	}
 
-	return &shortUrl, nil
+	return &shortURL, nil
 }
